@@ -11,6 +11,13 @@ const chainExplorers: Record<string, (hash: string) => string> = {
   solana: (h) => `https://explorer.solana.com/tx/${h}?cluster=devnet`,
 };
 
+type ClaimFaucetResponse = {
+  data?: {
+    tx_hash?: string;
+    chain?: keyof typeof chainExplorers; // "sepolia" | "twine" | "solana"
+  };
+};
+
 export default function FaucetForm() {
   const [chainKey, setChainKey] = useState<string>(defaultChainKey);
   const [tokenAddress, setTokenAddress] = useState<string>(
@@ -62,28 +69,39 @@ export default function FaucetForm() {
 
     setLoading(true);
     try {
-      const resp = await claimFaucet(payload);
-      const tx = resp.data?.tx_hash as string | undefined;
-      const chain = String(resp.data?.chain ?? chainKey);
-      const buildExplorer = chainExplorers[chain];
+    const resp = (await claimFaucet(payload)) as ClaimFaucetResponse;
 
-      if (tx && buildExplorer) {
-        const link = buildExplorer(tx);
-        setLastExplorerUrl(link);
-        setNotice({
-          type: "success",
-          message: "Success! Your request was processed.",
-        });
-      } else {
-        setLastExplorerUrl(null);
-        setNotice({ type: "success", message: "Success!" });
-      }
-    } catch (err: any) {
-      setNotice({ type: "error", message: `❌ ${err?.message || String(err)}` });
+    const tx =
+      typeof resp.data?.tx_hash === "string" ? resp.data.tx_hash : undefined;
+
+    const chain =
+      (resp.data?.chain ?? chainKey) as keyof typeof chainExplorers;
+
+    const buildExplorer = chainExplorers[chain];
+
+    if (tx && buildExplorer) {
+      const link = buildExplorer(tx);
+      setLastExplorerUrl(link);
+      setNotice({
+        type: "success",
+        message: "Success! Your request was processed.",
+      });
+    } else {
       setLastExplorerUrl(null);
-    } finally {
-      setLoading(false);
+      setNotice({ type: "success", message: "Success!" });
     }
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+        ? err
+        : "Unknown error";
+    setNotice({ type: "error", message: `❌ ${message}` });
+    setLastExplorerUrl(null);
+  } finally {
+    setLoading(false);
+  }
   };
 
   return (
