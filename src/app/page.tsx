@@ -4,7 +4,7 @@ import FaucetForm from "@/components/FaucetForm";
 export default function Home() {
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-6 bg-[#c2ffc0]"
+      className="min-h-screen flex items-center justify-center p-6 bg-[#e2f0e1]"
     >
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-4">
