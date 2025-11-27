@@ -38,13 +38,43 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Release
 
-develop -> dev environment
-  |
- push
-  |
-staging -> public testnet
-  |
- push
-  |
-main -> production release
-  | -> create production tag
+```
+GIT BRANCH              ACTION                  ENVIRONMENT
+-----------             ------                  -----------
+[develop] ───────────► Auto Deploy ──────────► (Dev Environment)
+    │
+    ▼
+(Pull Request)
+    │
+    ▼
+[staging] ───────────► Auto Deploy ──────────► (Public Testnet)
+    │
+    ▼
+(Pull Request)
+    │
+    ▼
+ [main] ─────────────► Manual/Gate ──────────► (Production Release)
+    │
+    └───► Create Tag (v1.x.x)
+```
+🚀 Release Workflow
+
+    🟦 Develop Phase
+
+        develop branch triggers deployment to Dev Environment.
+
+        Action: Push / Merge.
+
+    🟨 Staging Phase
+
+        staging branch triggers deployment to Public Testnet.
+
+        Action: Promote from develop.
+
+    🟩 Production Phase
+
+        main branch triggers Production Release.
+
+        Action: Promote from staging.
+
+        Post-Action: 🏷️ Create Production Tag (e.g., v1.0.0).
