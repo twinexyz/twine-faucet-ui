@@ -16,15 +16,15 @@ export const CHAINS: Record<string, ChainCfg> = {
     tokens: [
       {
         symbol: 'FauxCoin',
-        address: '0xFB2B1F3180a2B6f25b476B0365Cd710964634972',
+        address: '0x0B32B7909c214f62F94D147151DaAbA3B371ce71',
       },
       {
         symbol: 'EthSol',
-        address: '0x91607f93f3F46e05e62AE910FE0d75fB001E74b6',
+        address: '0x1E168F560B3E97FA7Fe4d53F1D9137Cef24b0DFB',
       },
       {
         symbol: 'TwineUSD',
-        address: '0x457BFF07aC42cF92a04c9C551f8A4D4bcffeD6a5',
+        address: '0x1C2E8d2f51DbDA7588289Ea80E871380A5d02350',
       },
     ],
   },
@@ -41,19 +41,19 @@ export const CHAINS: Record<string, ChainCfg> = {
       },
       {
         symbol: 'ETHToken',
-        address: '0xF64E5449332820DBC53EA079cC4c3F50ED2491Ed',
+        address: '0xba3225E9A7Da0E5241E3d6aE0Fbd82F6274a6CD7',
       },
       {
         symbol: 'FauxCoin',
-        address: '0xc1E1CdC77B87391E4B7F25b5C3a70E81C55C99A6',
+        address: '0x5B3d40bb9db78019CEc2b8A13c4977E7063F8f91',
       },
       {
         symbol: 'SolToken',
-        address: '0x51e69C0381cB2A79EAA0944d3e81c32f2AF0086C',
+        address: '0x8E41Dbf726F0F38DD905054797e637d9E3d8B76C',
       },
       {
         symbol: 'TwineUSD',
-        address: '0x2080Af84bF4f4E355dB14393384aAF727EaF917F',
+        address: '0xd02794DE6D81eE1735704414d1A0B269631671dd',
       },
     ],
   },

@@ -7,7 +7,7 @@ import { claimFaucet } from '@/lib/api';
 
 const chainExplorers: Record<string, (hash: string) => string> = {
   sepolia: (h) => `https://sepolia.etherscan.io/tx/${h}`,
-  twine: (h) => `https://stage-explorer.twine.limited/tx/${h}`,
+  twine: (h) => `https://explorer.testnet.twinelabs.xyz/tx/${h}`,
   solana: (h) => `https://explorer.solana.com/tx/${h}?cluster=devnet`,
 };
 
