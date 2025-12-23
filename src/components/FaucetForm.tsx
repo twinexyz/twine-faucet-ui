@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CHAINS, defaultChainKey } from '@/config/chains';
 import type { FaucetRequest } from '@/types/faucet';
 import { claimFaucet } from '@/lib/api';
@@ -17,6 +17,26 @@ type ClaimFaucetResponse = {
     chain?: keyof typeof chainExplorers; // "sepolia" | "twine" | "solana"
   };
 };
+
+type FaucetClaimRequest = FaucetRequest & { turnstile_token: string };
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback?: (token: string) => void;
+          'expired-callback'?: () => void;
+          'error-callback'?: () => void;
+        }
+      ) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
 
 export default function FaucetForm() {
   const [chainKey, setChainKey] = useState<string>(defaultChainKey);
@@ -36,11 +56,77 @@ export default function FaucetForm() {
   const chains = useMemo(() => Object.values(CHAINS), []);
   const current = CHAINS[chainKey];
 
+  const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITEKEY;
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  //where Turnstile will render
+  const turnstileRef = useRef<HTMLDivElement | null>(null);
+
+  //Used to reset/remove the widget later
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     setTokenAddress(current?.tokens?.[0]?.address ?? '');
     setNotice(null);
     setLastExplorerUrl(null);
+
+    setTurnstileToken(null);
+    if (window.turnstile && turnstileWidgetIdRef.current) {
+      window.turnstile.reset(turnstileWidgetIdRef.current);
+    }
   }, [chainKey, current]);
+
+  //plumbing the cloudflare's turnstile widget
+  useEffect(() => {
+    if (!sitekey) return;
+
+    const SCRIPT_ID = 'cf-turnstile-script';
+
+    const renderWidget = () => {
+      //wait for Api + DOM node
+      if (!window.turnstile) return;
+      if (!turnstileRef.current) return;
+
+      //prevent double render
+      if (turnstileWidgetIdRef.current) return;
+
+      turnstileWidgetIdRef.current = window.turnstile.render(
+        turnstileRef.current,
+        {
+          sitekey: sitekey,
+          callback: (token: string) => {
+            setTurnstileToken(token);
+          },
+          'expired-callback': () => {
+            setTurnstileToken(null);
+          },
+          'error-callback': () => {
+            setTurnstileToken(null);
+          },
+        }
+      );
+    };
+
+    //inject script once
+    const existing = document.getElementById(SCRIPT_ID) as HTMLElement | null;
+    if (!existing) {
+      const s = document.createElement('script');
+      s.id = SCRIPT_ID;
+      s.src =
+        'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.defer = true;
+      s.onload = renderWidget;
+      document.head.appendChild(s);
+    } else {
+      //script already present; try render immediately
+      renderWidget();
+    }
+
+    //also poll briefly in case onload fire before component ref is ready
+    const interval = window.setInterval(renderWidget, 100);
+    return () => window.clearInterval(interval);
+  }, [sitekey]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,11 +148,16 @@ export default function FaucetForm() {
       setNotice({ type: 'error', message: 'Please select a token.' });
       return;
     }
+    if (!turnstileToken) {
+      setNotice({ type: 'error', message: 'Please complete the verification' });
+      return;
+    }
 
-    const payload: FaucetRequest = {
+    const payload: FaucetClaimRequest = {
       chain: String(chainKey),
       token_address: tokenAddress,
       wallet_address: wallet.trim(),
+      turnstile_token: turnstileToken,
     };
 
     setLoading(true);
@@ -103,6 +194,11 @@ export default function FaucetForm() {
       setLastExplorerUrl(null);
     } finally {
       setLoading(false);
+      //Reset Turnstile so retry gets a fresh token
+      if (window.turnstile && turnstileWidgetIdRef.current) {
+        window.turnstile.reset(turnstileWidgetIdRef.current);
+      }
+      setTurnstileToken(null);
     }
   };
 
@@ -175,12 +271,26 @@ export default function FaucetForm() {
           />
         </div>
 
+        <div className="mt-2">
+          {sitekey ? (
+            <div ref={turnstileRef} />
+          ) : (
+            <div className="rounded-lg bg-red-600 p-3 text-xs text-white">
+              Missing NEXT_PUBLIC_TURNSTILE_SITEKEY
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-lime-400 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-900/40 transition hover:from-emerald-600 hover:to-lime-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/70 disabled:cursor-not-allowed disabled:bg-gray-500 disabled:shadow-none"
-          disabled={loading}
+          disabled={loading || !turnstileToken}
         >
-          {loading ? 'Processing…' : 'Request Airdrop'}
+          {loading
+            ? 'Processing…'
+            : !turnstileToken
+            ? 'Complete Verification...'
+            : 'Request Airdrop'}
         </button>
 
         {notice && (
