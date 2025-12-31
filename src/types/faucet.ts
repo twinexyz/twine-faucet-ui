@@ -1,9 +1,13 @@
-export type ChainKey = "twine" | "sepolia" | "solana";
+export type ChainKey = 'twine' | 'sepolia' | 'solana';
 
 export interface FaucetRequest {
   chain: ChainKey | string;
   token_address: string;
   wallet_address: string;
+}
+
+export interface FaucetClaimRequest extends FaucetRequest {
+  turnstile_token: string;
 }
 
 export interface FaucetSuccessData {
@@ -16,7 +20,7 @@ export interface FaucetSuccessData {
 }
 
 export interface FaucetResponse {
-  status: "success" | "error";
+  status: 'success' | 'error';
   data?: FaucetSuccessData;
   error?: string;
   message?: string;
